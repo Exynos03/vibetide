@@ -76,7 +76,7 @@ export default function AudioPlayer() {
       </div>
 
       {/* Volume */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center">
         <label className="text-sm text-black">Volume</label>
         <input
           type="range"
