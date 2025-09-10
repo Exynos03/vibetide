@@ -1,6 +1,6 @@
 "use client";
 
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useRangeAudioPlayer } from "@/hooks/useRangeAudioPlayer";
 
 const tracks = [
   "audio/coffee-lofi-chill-lofi-music-332738.mp3",
@@ -24,19 +24,31 @@ export default function AudioPlayer() {
     volume,
     seek,
     duration,
+    isLoading,
+    error,
     setVolume,
     handlePlayPause,
     handleNext,
     handlePrev,
     handleSeek,
     trackName,
-  } = useAudioPlayer(tracks);
+  } = useRangeAudioPlayer(tracks);
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 bg-gray-100 rounded-xl shadow-md w-[320px]">
       <h2 className="text-lg font-semibold text-black">
         Playing: {trackName}
       </h2>
+      
+      {isLoading && (
+        <div className="text-sm text-blue-600">Loading...</div>
+      )}
+      
+      {error && (
+        <div className="text-sm text-red-600 bg-red-100 p-2 rounded">
+          Error: {error}
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex gap-4">
