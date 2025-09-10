@@ -1,6 +1,6 @@
 "use client";
 
-import { useRangeAudioPlayer } from "@/hooks/useRangeAudioPlayer";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 
 const tracks = [
   "audio/coffee-lofi-chill-lofi-music-332738.mp3",
@@ -24,31 +24,19 @@ export default function AudioPlayer() {
     volume,
     seek,
     duration,
-    isLoading,
-    error,
     setVolume,
     handlePlayPause,
     handleNext,
     handlePrev,
     handleSeek,
     trackName,
-  } = useRangeAudioPlayer(tracks);
+  } = useAudioPlayer(tracks);
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 bg-gray-100 rounded-xl shadow-md w-[320px]">
       <h2 className="text-lg font-semibold text-black">
         Playing: {trackName}
       </h2>
-      
-      {isLoading && (
-        <div className="text-sm text-blue-600">Loading...</div>
-      )}
-      
-      {error && (
-        <div className="text-sm text-red-600 bg-red-100 p-2 rounded">
-          Error: {error}
-        </div>
-      )}
 
       {/* Controls */}
       <div className="flex gap-4">
@@ -74,7 +62,7 @@ export default function AudioPlayer() {
 
       {/* Progress bar */}
       <div className="flex items-center gap-2 w-full">
-        <span className="text-xs">{formatTime(seek)}</span>
+        <span className="text-xs text-black">{formatTime(seek)}</span>
         <input
           type="range"
           min="0"
@@ -84,7 +72,7 @@ export default function AudioPlayer() {
           onChange={(e) => handleSeek(parseFloat(e.target.value))}
           className="flex-1"
         />
-        <span className="text-xs">{formatTime(duration)}</span>
+        <span className="text-xs text-black">{formatTime(duration)}</span>
       </div>
 
       {/* Volume */}
