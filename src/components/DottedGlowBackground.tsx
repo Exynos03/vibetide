@@ -1,0 +1,183 @@
+"use client";
+
+import React, { useEffect, useRef } from "react";
+
+interface DottedGlowBackgroundProps {
+  className?: string;
+  gap?: number;
+  radius?: number;
+  color?: string;
+  glowColor?: string;
+  opacity?: number;
+  backgroundOpacity?: number;
+  speedMin?: number;
+  speedMax?: number;
+  speedScale?: number;
+}
+
+export default function DottedGlowBackground({
+  className = "",
+  gap = 12,
+  radius = 2,
+  color = "rgba(153, 163, 127, 0.7)",
+  glowColor = "rgba(140, 150, 120, 0.85)",
+  opacity = 0.6,
+  backgroundOpacity = 0,
+  speedMin = 0.4,
+  speedMax = 1.3,
+  speedScale = 1,
+}: DottedGlowBackgroundProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    const container = containerRef.current;
+    if (!el || !container) return;
+
+    const ctx = el.getContext("2d");
+    if (!ctx) return;
+
+    let raf = 0;
+    let stopped = false;
+
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    const resize = () => {
+      const { width, height } = container.getBoundingClientRect();
+      el.width = Math.max(1, Math.floor(width * dpr));
+      el.height = Math.max(1, Math.floor(height * dpr));
+      el.style.width = `${Math.floor(width)}px`;
+      el.style.height = `${Math.floor(height)}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+    resize();
+
+    // Precompute dot metadata
+    let dots: { x: number; y: number; phase: number; speed: number }[] = [];
+
+    const regenDots = () => {
+      dots = [];
+      const { width, height } = container.getBoundingClientRect();
+      const cols = Math.ceil(width / gap) + 2;
+      const rows = Math.ceil(height / gap) + 2;
+      const min = Math.min(speedMin, speedMax);
+      const max = Math.max(speedMin, speedMax);
+      for (let i = -1; i < cols; i++) {
+        for (let j = -1; j < rows; j++) {
+          const x = i * gap + (j % 2 === 0 ? 0 : gap * 0.5); // offset every other row
+          const y = j * gap;
+          const phase = Math.random() * Math.PI * 2;
+          const span = Math.max(max - min, 0);
+          const speed = min + Math.random() * span;
+          dots.push({ x, y, phase, speed });
+        }
+      }
+    };
+
+    regenDots();
+
+    let last = performance.now();
+
+    const draw = (now: number) => {
+      if (stopped) return;
+      last = now;
+      const { width, height } = container.getBoundingClientRect();
+
+      ctx.clearRect(0, 0, el.width, el.height);
+      ctx.globalAlpha = opacity;
+
+      // optional subtle background fade for depth
+      if (backgroundOpacity > 0) {
+        const grad = ctx.createRadialGradient(
+          width * 0.5,
+          height * 0.4,
+          Math.min(width, height) * 0.1,
+          width * 0.5,
+          height * 0.5,
+          Math.max(width, height) * 0.7,
+        );
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(
+          1,
+          `rgba(0,0,0,${Math.min(Math.max(backgroundOpacity, 0), 1)})`,
+        );
+        ctx.fillStyle = grad as unknown as CanvasGradient;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      // animate dots
+      ctx.save();
+      ctx.fillStyle = color;
+
+      const time = (now / 1000) * Math.max(speedScale, 0);
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        // Linear triangle wave 0..1..0 for linear glow/dim
+        const mod = (time * d.speed + d.phase) % 2;
+        const lin = mod < 1 ? mod : 2 - mod; // 0..1..0
+        const a = 0.25 + 0.55 * lin; // 0.25..0.8 linearly
+
+        // draw glow when bright
+        if (a > 0.6) {
+          const glow = (a - 0.6) / 0.4; // 0..1
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = 6 * glow;
+        } else {
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.globalAlpha = a * opacity;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      raf = requestAnimationFrame(draw);
+    };
+
+    const handleResize = () => {
+      resize();
+      regenDots();
+    };
+
+    window.addEventListener("resize", handleResize);
+    raf = requestAnimationFrame(draw);
+
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", handleResize);
+      ro.disconnect();
+    };
+  }, [
+    gap,
+    radius,
+    color,
+    glowColor,
+    opacity,
+    backgroundOpacity,
+    speedMin,
+    speedMax,
+    speedScale,
+  ]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`absolute inset-0 pointer-events-none ${className}`}
+      style={{ zIndex: 0 }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ display: "block", width: "100%", height: "100%" }}
+      />
+    </div>
+  );
+}
+

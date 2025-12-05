@@ -1,6 +1,7 @@
 "use client";
 
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import Waveform from "@/components/Waveform";
 
 const tracks = [
   "audio/coffee-lofi-chill-lofi-music-332738.mp3",
@@ -20,6 +21,7 @@ function formatTime(seconds: number) {
 
 export default function AudioPlayer() {
   const {
+    currentTrack,
     isPlaying,
     volume,
     seek,
@@ -32,11 +34,29 @@ export default function AudioPlayer() {
     trackName,
   } = useAudioPlayer(tracks);
 
+  const waveformUrl =
+    "/waveforms/" +
+    tracks[currentTrack]
+      .split("/")
+      .pop()!
+      .replace(/\.(mp3|wav|m4a)$/i, ".json");
+
   return (
     <div className="flex flex-col items-center gap-4 p-4 bg-gray-100 rounded-xl shadow-md w-[320px]">
       <h2 className="text-lg font-semibold text-black">
         Playing: {trackName}
       </h2>
+
+      {/* Waveform (click to seek) */}
+      <Waveform
+        dataUrl={waveformUrl}
+        progress={duration ? seek / duration : 0}
+        onSeek={(p) => handleSeek(p * duration)}
+        width={300}
+        height={80}
+        barWidth={6}
+        barGap={8}
+      />
 
       {/* Controls */}
       <div className="flex gap-4">
